@@ -1,0 +1,10 @@
+^C:\USERS\MELNI\DESKTOP\CPPCOURSE\DATE\DATE\BUILD\CMAKEFILES\9963FDBF94E4AE22F347C36EC9676507\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/melni/Desktop/cppcourse/Date/Date -BC:/Users/melni/Desktop/cppcourse/Date/Date/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/melni/Desktop/cppcourse/Date/Date/build/CDateTests.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
