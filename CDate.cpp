@@ -17,7 +17,6 @@ constexpr unsigned FIVE_MONTHS_DAYS = 153;
 static constexpr unsigned monthLengths[] = {
     31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
-
 CDate::CDate() : m_days(0), m_isValid(true) {}
 
 CDate::CDate(unsigned day, Month month, unsigned year)
