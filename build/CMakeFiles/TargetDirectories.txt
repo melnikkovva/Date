@@ -1,0 +1,4 @@
+C:/Users/melni/Desktop/cppcourse/Date/Date/build/CMakeFiles/CDateTests.dir
+C:/Users/melni/Desktop/cppcourse/Date/Date/build/CMakeFiles/RUN_TESTS.dir
+C:/Users/melni/Desktop/cppcourse/Date/Date/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/melni/Desktop/cppcourse/Date/Date/build/CMakeFiles/ZERO_CHECK.dir
