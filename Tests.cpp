@@ -6,7 +6,6 @@
 TEST_CASE("Default constructor")
 {
     CDate d;
-    REQUIRE(d.IsValid());
     REQUIRE(d.GetDay() == 1);
     REQUIRE(d.GetMonth() == Month::JANUARY);
     REQUIRE(d.GetYear() == 1970);
@@ -15,19 +14,16 @@ TEST_CASE("Default constructor")
 TEST_CASE("Constructor from timestamp")
 {
     CDate d1(0);
-    REQUIRE(d1.IsValid());
     REQUIRE(d1.GetDay() == 1);
     REQUIRE(d1.GetMonth() == Month::JANUARY);
     REQUIRE(d1.GetYear() == 1970);
 
     CDate d2(31); 
-    REQUIRE(d2.IsValid());
     REQUIRE(d2.GetDay() == 1);
     REQUIRE(d2.GetMonth() == Month::FEBRUARY);
     REQUIRE(d2.GetYear() == 1970);
 
     CDate d3(365); 
-    REQUIRE(d3.IsValid());
     REQUIRE(d3.GetDay() == 1);
     REQUIRE(d3.GetMonth() == Month::JANUARY);
     REQUIRE(d3.GetYear() == 1971);
@@ -35,22 +31,21 @@ TEST_CASE("Constructor from timestamp")
 
 TEST_CASE("Valid and invalid dates")
 {
-    CDate valid(1, Month::JANUARY, 2000);
-    REQUIRE(valid.IsValid());
-
-    CDate invalid(31, Month::FEBRUARY, 2020);
-    REQUIRE_FALSE(invalid.IsValid());
+    REQUIRE_NOTHROW(CDate(1, Month::JANUARY, 2000));
+    
+    REQUIRE_THROWS_AS(CDate(31, Month::FEBRUARY, 2020), std::invalid_argument);
+    REQUIRE_THROWS_AS(CDate(0, Month::JANUARY, 2020), std::invalid_argument);
+    REQUIRE_THROWS_AS(CDate(1, Month::JANUARY, 1969), std::invalid_argument);
+    REQUIRE_THROWS_AS(CDate(1, Month::JANUARY, 10000), std::invalid_argument);
 }
 
 TEST_CASE("Leap year handling")
 {
     // 29 февраля високосного
-    CDate d1(29, Month::FEBRUARY, 2020);
-    REQUIRE(d1.IsValid());
+    REQUIRE_NOTHROW(CDate(29, Month::FEBRUARY, 2020));
 
     // 29 февраля не високосного
-    CDate d2(29, Month::FEBRUARY, 2021);
-    REQUIRE_FALSE(d2.IsValid());
+    REQUIRE_THROWS_AS(CDate(29, Month::FEBRUARY, 2021), std::invalid_argument);
 
     // 28 февраля вис + 1 = 29
     CDate d3(28, Month::FEBRUARY, 2020);
@@ -58,12 +53,12 @@ TEST_CASE("Leap year handling")
     REQUIRE(d3.GetDay() == 29);
     REQUIRE(d3.GetMonth() == Month::FEBRUARY);
 
-    // 29 февраля невис + 1 = 1 
+    // 29 февраля вис + 1 = 1
     ++d3;
     REQUIRE(d3.GetDay() == 1);
     REQUIRE(d3.GetMonth() == Month::MARCH);
 
-    //в невысокосный норм перешло
+    // 28 фев невыс +1 = 1
     CDate d4(28, Month::FEBRUARY, 2021);
     ++d4;
     REQUIRE(d4.GetDay() == 1);
@@ -99,30 +94,132 @@ TEST_CASE("Date difference")
     REQUIRE((d2 - d1) == -2);
 }
 
-TEST_CASE("Comparison operators")
+TEST_CASE("Addition")
 {
-    CDate d1(1, Month::JANUARY, 2010);
-    CDate d2(2, Month::JANUARY, 2010);
+    CDate d(1, Month::JANUARY, 1970);
+    CDate d2 = d + 365;
+    REQUIRE(d2.GetYear() == 1971);
+    REQUIRE(d2.GetMonth() == Month::JANUARY);
+    REQUIRE(d2.GetDay() == 1);
 
-    REQUIRE(d1 < d2);
-    REQUIRE(d2 > d1);
-    REQUIRE(d1 <= d2);
-    REQUIRE(d2 >= d1);
-    REQUIRE(d1 != d2);
+    CDate d3 = d + 365 * 10;
+    REQUIRE(d3.GetYear() == 1979);
 }
 
-TEST_CASE("Increment and decrement")
+TEST_CASE("Comparison operators")
 {
-    CDate d(31, Month::DECEMBER, 2009);
-
-    ++d;
-    REQUIRE(d.GetDay() == 1);
-    REQUIRE(d.GetMonth() == Month::JANUARY);
-    REQUIRE(d.GetYear() == 2010);
-
-    --d;
-    REQUIRE(d.GetDay() == 31);
-    REQUIRE(d.GetMonth() == Month::DECEMBER);
+    SECTION("Equal dates")
+    {
+        CDate d1(1, Month::JANUARY, 2010);
+        CDate d2(1, Month::JANUARY, 2010);
+        
+        REQUIRE(d1 == d2);
+        REQUIRE(d1 <= d2);
+        REQUIRE(d1 >= d2);
+        REQUIRE(!(d1 != d2));
+        REQUIRE(!(d1 < d2));
+        REQUIRE(!(d1 > d2));
+    }
+    
+    SECTION("Different days same month")
+    {
+        CDate d1(1, Month::JANUARY, 2010);
+        CDate d2(2, Month::JANUARY, 2010);
+        CDate d3(31, Month::JANUARY, 2010);
+        
+        REQUIRE(d1 < d2);
+        REQUIRE(d2 > d1);
+        REQUIRE(d1 <= d2);
+        REQUIRE(d2 >= d1);
+        REQUIRE(d1 != d2);
+        
+        REQUIRE(d1 < d3);
+        REQUIRE(d2 < d3);
+        REQUIRE(d3 > d2);
+        REQUIRE(d3 >= d2);
+    }
+    
+    SECTION("Different months same year")
+    {
+        CDate d1(1, Month::JANUARY, 2010);
+        CDate d2(1, Month::FEBRUARY, 2010);
+        CDate d3(1, Month::DECEMBER, 2010);
+        
+        REQUIRE(d1 < d2);
+        REQUIRE(d2 > d1);
+        REQUIRE(d2 < d3);
+        REQUIRE(d3 > d2);
+        REQUIRE(d1 < d3);
+        REQUIRE(d3 > d1);
+        
+        REQUIRE(d1 != d2);
+        REQUIRE(d2 != d3);
+    }
+    
+    SECTION("Different years")
+    {
+        CDate d1(1, Month::JANUARY, 1970);
+        CDate d2(1, Month::JANUARY, 2000);
+        CDate d3(31, Month::DECEMBER, 9999);
+        
+        REQUIRE(d1 < d2);
+        REQUIRE(d2 > d1);
+        REQUIRE(d2 < d3);
+        REQUIRE(d3 > d2);
+        REQUIRE(d1 < d3);
+        
+        REQUIRE(d1 != d2);
+        REQUIRE(d2 != d3);
+    }
+    
+    SECTION("Boundary dates")
+    {
+        CDate d1(1, Month::JANUARY, 1970); 
+        CDate d2(31, Month::DECEMBER, 9999);
+        
+        REQUIRE(d1 < d2);
+        REQUIRE(d2 > d1);
+        REQUIRE(d1 <= d2);
+        REQUIRE(d2 >= d1);
+        REQUIRE(d1 != d2);
+    }
+    
+    SECTION("Month and year boundaries")
+    {
+        CDate d1(31, Month::DECEMBER, 2009);
+        CDate d2(1, Month::JANUARY, 2010);
+        CDate d3(28, Month::FEBRUARY, 2010);
+        CDate d4(1, Month::MARCH, 2010);
+        
+        REQUIRE(d1 < d2); 
+        REQUIRE(d2 < d3);  
+        REQUIRE(d3 < d4);  
+        
+        REQUIRE(d2 > d1);
+        REQUIRE(d3 > d2);
+        REQUIRE(d4 > d3);
+        
+        REQUIRE(d1 != d2);
+        REQUIRE(d2 != d3);
+        REQUIRE(d3 != d4);
+    }
+    
+    SECTION("Leap years")
+    {
+        CDate d1(28, Month::FEBRUARY, 2000); 
+        CDate d2(29, Month::FEBRUARY, 2000); 
+        CDate d3(1, Month::MARCH, 2000);    
+        
+        REQUIRE(d1 < d2);
+        REQUIRE(d2 < d3);
+        REQUIRE(d1 < d3);
+        
+        REQUIRE(d2 > d1);
+        REQUIRE(d3 > d2);
+        
+        REQUIRE(d1 != d2);
+        REQUIRE(d2 != d3);
+    }
 }
 
 TEST_CASE("Week day")
@@ -138,7 +235,6 @@ TEST_CASE("Input operator")
     CDate d;
     ss >> d;
 
-    REQUIRE(d.IsValid());
     REQUIRE(d.GetDay() == 3);
     REQUIRE(d.GetMonth() == Month::MARCH);
     REQUIRE(d.GetYear() == 2010);
@@ -154,69 +250,18 @@ TEST_CASE("Output operator")
     REQUIRE(ss.str() == "03.03.2010");
 }
 
-TEST_CASE("Invalid output")
-{
-    CDate d(31, Month::FEBRUARY, 2020);
-
-    std::stringstream ss;
-    ss << d;
-
-    REQUIRE(ss.str() == "INVALID");
-}
-
-TEST_CASE("Out of range becomes invalid")
-{
-    CDate d(1, Month::JANUARY, 1970);
-    d -= 1;
-
-    REQUIRE_FALSE(d.IsValid());
-}
-
-TEST_CASE("Date difference large and negative")
-{
-    CDate d1(1, Month::JANUARY, 1970);
-    CDate d2(31, Month::DECEMBER, 9999);
-    REQUIRE((d2 - d1) > 0);
-
-    CDate d3(2, Month::JANUARY, 1970);
-    CDate d4(1, Month::JANUARY, 1970);
-    REQUIRE((d3 - d4) == 1);
-    REQUIRE((d4 - d3) == -1);
-}
-
-TEST_CASE("Addition with large days")
-{
-    CDate d(1, Month::JANUARY, 1970);
-    CDate d2 = d + 365;
-    REQUIRE(d2.GetYear() == 1971);
-    REQUIRE(d2.GetMonth() == Month::JANUARY);
-    REQUIRE(d2.GetDay() == 1);
-
-    CDate d3 = d + 365 * 10;
-    REQUIRE(d3.GetYear() == 1980);
-}
-
 TEST_CASE("Input operator invalid formats")
 {
     CDate d;
+    
     std::stringstream ss1("99.99.9999");
-    ss1 >> d;
-    REQUIRE_FALSE(d.IsValid());
+    REQUIRE_THROWS_AS(ss1 >> d, std::invalid_argument);
 
-    CDate d2;
     std::stringstream ss2("01-01-2020");
-    ss2 >> d2;
-    REQUIRE_FALSE(d2.IsValid());
+    REQUIRE_THROWS_AS(ss2 >> d, std::invalid_argument);
 
-    CDate d3;
     std::stringstream ss3("abc");
-    ss3 >> d3;
-    REQUIRE_FALSE(d3.IsValid());
-
-    CDate d4;
-    std::stringstream ss4("INVALID");
-    ss4 >> d4;
-    REQUIRE_FALSE(d4.IsValid());
+    REQUIRE_THROWS_AS(ss3 >> d, std::invalid_argument);
 }
 
 TEST_CASE("Postfix increment/decrement")
@@ -247,67 +292,9 @@ TEST_CASE("Week day for various dates")
     REQUIRE(d3.GetWeekDay() == WeekDay::FRIDAY);
 }
 
-TEST_CASE("Operations on invalid date")
+TEST_CASE("Operator + and - with boundaries")
 {
-    CDate invalid(31, Month::FEBRUARY, 2020);
-    REQUIRE_FALSE(invalid.IsValid());
-
-    invalid += 10;
-    REQUIRE_FALSE(invalid.IsValid()); 
-
-    invalid -= 5;
-    REQUIRE_FALSE(invalid.IsValid());
-
-    ++invalid;
-    REQUIRE_FALSE(invalid.IsValid());
-
-    CDate other(1, Month::JANUARY, 1970);
-    
-    auto sum1 = invalid + 5;
-    REQUIRE_FALSE(sum1.IsValid());
-    
-    auto sum2 = 5 + invalid;
-    REQUIRE_FALSE(sum2.IsValid());
-    
-    auto diff1 = invalid - 3;
-    REQUIRE_FALSE(diff1.IsValid());
-    
-    int diff2 = invalid - other;
-    REQUIRE(diff2 == -1); 
-
-    REQUIRE_FALSE(invalid == other);
-    REQUIRE(invalid != other);
-    REQUIRE_FALSE(invalid < other);
-    REQUIRE_FALSE(invalid > other);
-}
-
-TEST_CASE("Max valid date - boundary testing")
-{
-    CDate max(31, Month::DECEMBER, 9999);
-    REQUIRE(max.IsValid());
-
-    CDate over1(31, Month::DECEMBER, 9999);
-    over1 += 1;
-    REQUIRE_FALSE(over1.IsValid());
-
-    CDate maxDate(31, Month::DECEMBER, 9999);
-    CDate maxTimestamp(maxDate.GetDay(), maxDate.GetMonth(), maxDate.GetYear()); 
-    
-    CDate nearMax(30, Month::DECEMBER, 9999);
-    nearMax += 2; 
-    REQUIRE_FALSE(nearMax.IsValid());
-}
-
-TEST_CASE("Min valid date - boundary testing")
-{
-    CDate min(1, Month::JANUARY, 1970);
-    REQUIRE(min.IsValid());
-
-    CDate under = min;
-    under -= 1;
-    REQUIRE_FALSE(under.IsValid());
-
-    CDate min2(1, Month::JANUARY, 1970);
-    --min2;
-    REQUIRE_FALSE(min2.IsValid());
+    REQUIRE_NOTHROW(CDate(1, Month::JANUARY, 1970) + 100);
+    REQUIRE_THROWS_AS(CDate(1, Month::JANUARY, 1970) - 1, std::out_of_range);
+    REQUIRE_THROWS_AS(CDate(31, Month::DECEMBER, 9999) + 1, std::out_of_range);
 }

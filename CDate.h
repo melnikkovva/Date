@@ -26,7 +26,7 @@ public:
     Month GetMonth() const;
     unsigned GetYear() const;
     WeekDay GetWeekDay() const;
-    bool IsValid() const;
+    unsigned GetTimestamp() const { return m_days; }
 
     CDate& operator++();
     CDate operator++(int);
@@ -37,22 +37,20 @@ public:
     
     auto operator<=>(const CDate&) const = default;
     
-    friend CDate operator+(const CDate& d, int days);
-    friend CDate operator+(int days, const CDate& d);
-    friend CDate operator-(const CDate& d, int days);
-    friend int operator-(const CDate& a, const CDate& b);
-    
-    friend std::ostream& operator<<(std::ostream& os, const CDate& d);
-    friend std::istream& operator>>(std::istream& is, CDate& d);
-
 private:
     static bool IsLeapYear(unsigned year);
-    static unsigned DaysInMonth(Month m, unsigned year);
-    static bool MakeTimestamp(unsigned d, Month m, unsigned y, unsigned& out);
-    static void FromDays(unsigned days, unsigned& d, Month& m, unsigned& y);
+    static unsigned CountDaysInMonth(Month m, unsigned year);
+    static unsigned MakeTimestamp(unsigned d, Month m, unsigned y);
+    static void MakeDateFormat(unsigned days, unsigned& d, Month& m, unsigned& y);
     void AddDays(int delta);
     static unsigned GetMaxDays();
 
     unsigned m_days{0};
-    bool m_isValid{true};
 };
+
+CDate operator+(const CDate& d, int days);
+CDate operator+(int days, const CDate& d);
+CDate operator-(const CDate& d, int days);
+int operator-(const CDate& a, const CDate& b);
+std::ostream& operator<<(std::ostream& os, const CDate& d);
+std::istream& operator>>(std::istream& is, CDate& d);
